@@ -1,0 +1,66 @@
+name: Bug report
+description: Report a reproducible problem in Job Hunter
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please include enough detail for us to reproduce it safely.
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Which target site were you using?
+      placeholder: boss / sxs
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Run mode
+      options:
+        - rehearsal
+        - apply
+    validations:
+      required: true
+
+  - type: textarea
+    id: command
+    attributes:
+      label: Command used
+      description: Paste the exact command you ran.
+      placeholder: job-hunter --platform boss --mode rehearsal --job "Java开发实习生" --city 北京 --count 1
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or traceback
+      description: Remove any private information before submitting.
+      render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Python version, OS, browser, DrissionPage version, and whether `doctor.py --json` shows warnings.
+

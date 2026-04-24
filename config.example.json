@@ -1,0 +1,34 @@
+{
+  "resume_path": "./resume.md",
+  "greeting": "您好，我对贵司岗位很感兴趣，期待进一步沟通。",
+  "skills": [
+    "Java",
+    "MySQL",
+    "Redis"
+  ],
+  "target_roles": [
+    "Java开发实习生"
+  ],
+  "exclude_keywords": [
+    "销售"
+  ],
+  "min_score": 80,
+  "default_count": 20,
+  "default_mode": "rehearsal",
+  "platform_ports": {
+    "boss": 9222,
+    "sxs": 9223
+  },
+  "user_data_dirs": {
+    "boss": ".job_hunter/browser/boss",
+    "sxs": ".job_hunter/browser/sxs"
+  },
+  "llm": {
+    "base_url": "",
+    "api_key": "",
+    "model": "gpt-4o-mini",
+    "timeout": 60,
+    "temperature": 0.2
+  }
+}
+

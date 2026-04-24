@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest an improvement or a new platform adapter
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What workflow or limitation are you trying to improve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the change you want to see.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Boss adapter
+        - Shixiseng adapter
+        - Shared scoring / LLM
+        - Logging / analytics
+        - CLI / packaging
+        - Documentation
+        - New platform adapter
+    validations:
+      required: true
+
