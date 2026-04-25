@@ -62,13 +62,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def print_line(message: str = "") -> None:
-    print(message, flush=True)
+    print(str(sanitize_json_text(message)), flush=True)
 
 
 def prompt_text(label: str, default: str | None = None, *, required: bool = True) -> str:
     while True:
         suffix = f" [{default}]" if default else ""
-        value = input(f"{label}{suffix}: ").strip()
+        value = str(sanitize_json_text(input(f"{label}{suffix}: ").strip()))
         if value:
             return value
         if default is not None:
