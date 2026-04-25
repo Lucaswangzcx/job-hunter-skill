@@ -5,7 +5,98 @@
 - `Boss直聘`
 - `实习僧`
 
-这个仓库目前是 `alpha` 版本，目标不是“功能做满”，而是先把真实能跑通、能演练、能扩展、能开源协作的基础打稳。
+这是一个适合中国大学生和求职者直接上手的开源 `alpha` 项目。目标不是“炫技”，而是把真实可跑、可演练、可扩展、可协作的骨架先打稳。
+
+## 3 分钟上手版
+
+如果你只想最快跑起来，按这 4 步走：
+
+1. 先看 [docs/START_HERE.md](./docs/START_HERE.md)
+2. 复制 [config.example.json](./config.example.json) 和 [resume.example.md](./resume.example.md)
+3. 打开浏览器手动登录 `Boss直聘` 或 `实习僧`
+4. 运行 [skill_entry.py](./skill_entry.py)
+
+## 按使用路径看
+
+### 路线 A：我是路人，第一次来用
+
+先看这些：
+
+1. [docs/START_HERE.md](./docs/START_HERE.md) - 3 分钟上手版
+2. [config.example.json](./config.example.json) - 配置长什么样
+3. [resume.example.md](./resume.example.md) - 简历模板长什么样
+4. [docs/REPO_MAP.md](./docs/REPO_MAP.md) - 仓库文件怎么分工
+
+然后按这个顺序上手：
+
+1. 安装依赖
+2. 复制示例配置
+3. 填自己的 `resume.md`
+4. 先跑 `doctor.py`
+5. 再跑 `skill_entry.py`
+
+### 路线 B：我是要真的跑起来的人
+
+先看这些执行入口：
+
+- [skill_entry.py](./skill_entry.py) - 总入口
+- [shared.py](./shared.py) - 公共能力
+- [boss_apply.py](./boss_apply.py) - Boss 适配器
+- [sxs_apply.py](./sxs_apply.py) - 实习僧适配器
+- [doctor.py](./doctor.py) - 环境自检
+
+再看这些运行文件：
+
+- `config.json`
+- `resume.md`
+- `job-hunter.log`
+- `boss-<城市>-log.json`
+- `sxs-<城市>-log.json`
+
+### 路线 C：我是 agent，要接手这个仓库
+
+先看这些说明文件：
+
+- [CLAUDE.md](./CLAUDE.md)
+- [CODEBUDDY.md](./CODEBUDDY.md)
+- [TRAE.md](./TRAE.md)
+
+再看执行链：
+
+- [skill_entry.py](./skill_entry.py)
+- [shared.py](./shared.py)
+- [boss_apply.py](./boss_apply.py)
+- [sxs_apply.py](./sxs_apply.py)
+
+### 路线 D：我是开发者，要改代码
+
+先看这些：
+
+- [docs/REPO_MAP.md](./docs/REPO_MAP.md)
+- [tests/test_core.py](./tests/test_core.py)
+- [scripts/](./scripts/)
+
+然后再做修改：
+
+1. 先改代码
+2. 再改 README
+3. 再改 docs
+4. 最后跑测试和自检
+
+### 路线 E：我是要发布仓库的人
+
+先看这些：
+
+- [docs/GITHUB_RELEASE_v0.1.0.md](./docs/GITHUB_RELEASE_v0.1.0.md)
+- [docs/GITHUB_REPO_COPY.md](./docs/GITHUB_REPO_COPY.md)
+- [docs/RELEASE_CHECKLIST.md](./docs/RELEASE_CHECKLIST.md)
+
+然后确认：
+
+- 没有提交 `config.json`
+- 没有提交 `resume.md`
+- 没有提交本地浏览器目录
+- 没有提交日志和缓存文件
 
 ## 这个项目做什么
 
@@ -28,21 +119,8 @@
 
 ## 项目结构
 
-```text
-job-hunter-skill/
-├── skill_entry.py
-├── shared.py
-├── boss_apply.py
-├── sxs_apply.py
-├── doctor.py
-├── config.example.json
-├── resume.example.md
-├── README.md
-├── CONTRIBUTING.md
-├── SECURITY.md
-├── CODE_OF_CONDUCT.md
-└── tests/
-```
+如果你想先看文件分工，直接去 [docs/REPO_MAP.md](./docs/REPO_MAP.md)。
+这里只保留一条最短说明：根目录放入口、公共逻辑、平台适配器和发布文件，`docs/` 放面向用户的说明，`tests/` 放最核心的测试。
 
 ## 快速开始
 
