@@ -3,10 +3,13 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
+from job_hunter_skill.skill_entry import prompt_review_skills
 from job_hunter_skill.shared import (
     JobTask,
     append_log,
+    initialize_config_from_resume,
     keyword_in_text,
     load_log,
     log_bucket_items,
@@ -155,6 +158,41 @@ class SharedTests(unittest.TestCase):
         cleaned = sanitize_json_text({"skills": ["Java\udc80"]})
 
         self.assertEqual(cleaned, {"skills": ["Java "]})
+
+    def test_initialize_config_keeps_user_greeting(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            resume = Path(tmpdir) / "resume.md"
+            resume.write_text("Java MySQL Redis Spring Boot Git Linux Docker SQL", encoding="utf-8")
+
+            config, _profile = initialize_config_from_resume(
+                resume,
+                target_roles=["Java开发实习生"],
+                exclude_keywords=["销售"],
+                base_config={"greeting": "用户自己填写的话术"},
+                skill_dir=tmpdir,
+            )
+
+            self.assertEqual(config["greeting"], "用户自己填写的话术")
+
+    def test_prompt_review_skills_requires_user_confirmation(self) -> None:
+        inputs = iter(
+            [
+                "编辑",
+                "Java,Spring Boot,MySQL,Redis,Git,Linux,Docker,SQL",
+                "接受",
+            ]
+        )
+
+        with patch("builtins.input", lambda _prompt: next(inputs)), patch(
+            "job_hunter_skill.skill_entry.print_line",
+            lambda _message="": None,
+        ):
+            skills = prompt_review_skills(["Java", "MySQL"])
+
+        self.assertEqual(
+            skills,
+            ["Java", "Spring Boot", "MySQL", "Redis", "Git", "Linux", "Docker", "SQL"],
+        )
 
 
 if __name__ == "__main__":

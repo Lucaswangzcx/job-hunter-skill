@@ -52,8 +52,8 @@ Copy-Item examples/resume.example.md resume.md
 
 - 提示用户确认 `resume.md` 的位置。
 - 让用户填写打招呼话术、目标岗位、排除关键词、端口、运行模式、阈值和评分标准。
-- 不让用户手写 `skills`，而是根据简历自动抽取 8-15 个关键点。
-- 生成本地私有 `config.json`。
+- 根据简历自动抽取 8-15 个 `skills` 关键点，并展示给用户复查。
+- 用户可以接受或编辑 `skills`；确认完整配置摘要后才会生成本地私有 `config.json`。
 
 `config.json`、`resume.md` 和日志都不会提交到 GitHub。
 

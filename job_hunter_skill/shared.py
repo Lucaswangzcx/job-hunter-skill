@@ -1009,9 +1009,8 @@ def build_resume_profile(
         try:
             payload = llm_client.chat_json(
                 (
-                    "你是资深招聘顾问。请从简历中提取 8-15 个最能代表候选人的核心技能词，"
-                    "并生成一句 80 字以内、真实克制、可直接用于初次沟通的中文打招呼话术。"
-                    "只返回 JSON，格式为 {\"skills\":[],\"greeting\":\"\"}。"
+                    "你是资深招聘顾问。请从简历中提取 8-15 个最能代表候选人的核心技能词。"
+                    "只返回 JSON，格式为 {\"skills\":[]}。不要臆造简历中没有的经验。"
                 ),
                 (
                     f"目标岗位：{', '.join(target_roles) or '未提供'}\n"
@@ -1027,18 +1026,17 @@ def build_resume_profile(
             if not skills:
                 raise RuntimeError("LLM 没有返回技能关键词。")
 
-            greeting = clamp_text(str(payload.get("greeting") or DEFAULT_GREETING), 80)
             return {
                 "skills": skills[:15],
-                "greeting": greeting,
+                "greeting": DEFAULT_GREETING,
                 "source": "llm",
-                "note": "已通过 LLM 完成简历关键词抽取和话术生成。",
+                "note": "已通过 LLM 完成简历关键词抽取。",
             }
         except Exception as exc:
             fallback_skills = heuristic_extract_skills(resume_text)
             return {
                 "skills": fallback_skills,
-                "greeting": heuristic_greeting(target_roles, fallback_skills),
+                "greeting": DEFAULT_GREETING,
                 "source": "heuristic",
                 "note": f"LLM 调用失败，已回退到规则提取：{exc}",
             }
@@ -1046,7 +1044,7 @@ def build_resume_profile(
     skills = heuristic_extract_skills(resume_text)
     return {
         "skills": skills,
-        "greeting": heuristic_greeting(target_roles, skills),
+        "greeting": DEFAULT_GREETING,
         "source": "heuristic",
         "note": "未检测到可用的 LLM 配置，已使用规则提取简历关键词。",
     }
@@ -1077,7 +1075,7 @@ def initialize_config_from_resume(
             "target_roles": dedupe_keep_order(target_roles),
             "exclude_keywords": dedupe_keep_order(exclude_keywords),
             "skills": dedupe_keep_order(profile["skills"])[:15],
-            "greeting": clamp_text(str(profile["greeting"]), 80),
+            "greeting": clamp_text(str(config.get("greeting") or profile["greeting"]), 80),
             "min_score": int(config.get("min_score", 80) or 80),
         }
     )

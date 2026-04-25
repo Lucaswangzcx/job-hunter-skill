@@ -30,6 +30,7 @@ from job_hunter_skill.shared import (
     read_resume_text,
     resolve_skill_dir,
     run_mode_label,
+    sanitize_json_text,
     save_config,
     split_keywords,
 )
@@ -77,6 +78,19 @@ def prompt_text(label: str, default: str | None = None, *, required: bool = True
         print_line("该项不能为空，请重新输入。")
 
 
+def prompt_yes_no(label: str, *, default: bool = True) -> bool:
+    suffix = "Y/n" if default else "y/N"
+    while True:
+        raw = input(f"{label} [{suffix}]: ").strip().lower()
+        if not raw:
+            return default
+        if raw in {"y", "yes", "是", "确认", "ok"}:
+            return True
+        if raw in {"n", "no", "否", "不", "取消"}:
+            return False
+        print_line("请输入 yes 或 no。")
+
+
 def prompt_int(label: str, default: int) -> int:
     while True:
         raw = input(f"{label} [{default}]: ").strip()
@@ -100,6 +114,63 @@ def prompt_nonnegative_int(label: str, default: int) -> int:
 def prompt_keywords(label: str, default: str | None = None) -> list[str]:
     text = prompt_text(label, default=default, required=False)
     return split_keywords(text)
+
+
+def prompt_required_keywords(label: str) -> list[str]:
+    while True:
+        values = prompt_keywords(label)
+        if values:
+            return values
+        print_line("该项不能为空，请至少填写 1 个关键词。")
+
+
+def prompt_review_skills(skills: list[str]) -> list[str]:
+    reviewed = dedupe_keep_order(skills)[:15]
+    while True:
+        print_line("\n请复查根据简历自动抽取的 skills：")
+        for index, skill in enumerate(reviewed, start=1):
+            print_line(f"{index}. {skill}")
+        print_line("你可以接受这组 skills，也可以改成自己认可的 8-15 个关键词。")
+        action = prompt_text("接受 / 编辑 / 取消", default="接受").strip().lower()
+        if action in {"接受", "accept", "a", "yes", "y", "ok", "确认"}:
+            if 8 <= len(reviewed) <= 15:
+                return reviewed
+            print_line("skills 数量需要在 8-15 个之间，请选择编辑。")
+            continue
+        if action in {"编辑", "edit", "e"}:
+            edited = prompt_required_keywords("请输入最终 skills（8-15 个，用逗号分隔）")
+            if 8 <= len(edited) <= 15:
+                reviewed = edited
+                continue
+            print_line(f"当前填写了 {len(edited)} 个，skills 数量需要在 8-15 个之间。")
+            continue
+        if action in {"取消", "quit", "exit", "q"}:
+            raise RuntimeError("用户取消首次引导。")
+        print_line("请输入 接受、编辑 或 取消。")
+
+
+def config_preview(config: dict[str, Any]) -> dict[str, Any]:
+    llm = dict(config.get("llm", {}))
+    return {
+        "resume_path": config.get("resume_path", ""),
+        "greeting": config.get("greeting", ""),
+        "target_roles": config.get("target_roles", []),
+        "exclude_keywords": config.get("exclude_keywords", []),
+        "skills": config.get("skills", []),
+        "min_score": config.get("min_score", 80),
+        "default_count": config.get("default_count", 20),
+        "default_mode": config.get("default_mode", "rehearsal"),
+        "platform_ports": config.get("platform_ports", {}),
+        "user_data_dirs": config.get("user_data_dirs", {}),
+        "scoring": config.get("scoring", {}),
+        "llm": {
+            "base_url": llm.get("base_url", ""),
+            "api_key": "***" if llm.get("api_key") else "",
+            "model": llm.get("model", ""),
+            "timeout": llm.get("timeout", 60),
+            "temperature": llm.get("temperature", 0.2),
+        },
+    }
 
 
 def prompt_scoring(defaults: dict[str, Any]) -> dict[str, Any]:
@@ -207,7 +278,7 @@ def first_run_setup(*, skill_dir: Path) -> dict[str, Any]:
             continue
 
         greeting = prompt_text("请输入打招呼话术", default=DEFAULT_GREETING)
-        target_roles = prompt_keywords("请输入期望岗位关键词（多个用逗号分隔，例如 Java开发实习生,后端开发实习生）")
+        target_roles = prompt_required_keywords("请输入期望岗位关键词（多个用逗号分隔，例如 Java开发实习生,后端开发实习生）")
         exclude_keywords = prompt_keywords("请输入排除关键词（多个用逗号分隔，例如 销售,客服,培训）")
         min_score = prompt_int("最低匹配分阈值", int(defaults.get("min_score", 80)))
         default_count = prompt_int("默认检查/投递数量", int(defaults.get("default_count", 20)))
@@ -254,6 +325,12 @@ def first_run_setup(*, skill_dir: Path) -> dict[str, Any]:
                 skill_dir=skill_dir,
             )
             config["greeting"] = greeting
+            config["skills"] = prompt_review_skills(config["skills"])
+            print_line("\n请复查即将写入 config.json 的配置摘要：")
+            print_line(json.dumps(sanitize_json_text(config_preview(config)), ensure_ascii=False, indent=2))
+            if not prompt_yes_no("确认写入 config.json", default=True):
+                print_line("已取消写入。将重新进入首次引导。\n")
+                continue
             config_path = save_config(config, skill_dir=skill_dir)
             print_line(f"\n已生成配置文件：{config_path}")
             print_line(

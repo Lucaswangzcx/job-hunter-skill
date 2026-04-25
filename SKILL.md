@@ -63,8 +63,9 @@ Copy-Item examples/resume.example.md resume.md
 
 - 先提示用户确认 `resume.md` 路径。
 - 让用户自己填写 `greeting`、`target_roles`、`exclude_keywords`、`min_score`、`default_count`、`default_mode`、平台端口、浏览器用户目录、LLM 配置和评分标准。
-- 不让用户手写 `skills`；`skills` 必须由 agent 根据简历提取 8-15 个关键点。
-- 生成本地私有 `config.json`，不要输出其中的隐私内容。
+- `skills` 必须先由 agent 根据简历提取 8-15 个关键点，再展示给用户复查。
+- 用户可以接受或编辑 `skills`；必须在用户确认完整配置摘要后，才生成本地私有 `config.json`。
+- 不要向 GitHub、日志或最终答复输出用户隐私配置内容。
 
 4. 运行自检：
 
