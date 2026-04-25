@@ -41,10 +41,10 @@ dependencies = [
 dev = []
 
 [project.scripts]
-job-hunter = "skill_entry:main"
-job-hunter-boss = "boss_apply:main"
-job-hunter-sxs = "sxs_apply:main"
-job-hunter-doctor = "doctor:main"
+job-hunter = "job_hunter_skill.skill_entry:main"
+job-hunter-boss = "job_hunter_skill.boss_apply:main"
+job-hunter-sxs = "job_hunter_skill.sxs_apply:main"
+job-hunter-doctor = "job_hunter_skill.doctor:main"
 
 [tool.setuptools]
-py-modules = ["skill_entry", "shared", "boss_apply", "sxs_apply", "doctor"]
+packages = ["job_hunter_skill"]

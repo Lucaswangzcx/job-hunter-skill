@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import importlib.util
 import inspect
 import json
@@ -10,7 +11,7 @@ import sys
 from pathlib import Path
 from typing import Any, Callable
 
-from shared import (
+from job_hunter_skill.shared import (
     JobTask,
     PROJECT_NAME,
     PROJECT_VERSION,
@@ -33,8 +34,8 @@ from shared import (
 
 CODE_DIR = Path(__file__).resolve().parent
 SCRIPT_REGISTRY = {
-    "boss": {"file": "boss_apply.py", "functions": ("apply_jobs", "run", "main")},
-    "sxs": {"file": "sxs_apply.py", "functions": ("apply_jobs", "run", "main")},
+    "boss": {"module": "boss_apply", "functions": ("apply_jobs", "run", "main")},
+    "sxs": {"module": "sxs_apply", "functions": ("apply_jobs", "run", "main")},
 }
 
 
@@ -215,17 +216,16 @@ def wait_for_confirmation(*, auto_confirm: bool = False) -> bool:
 
 def load_platform_runner(platform: str) -> tuple[Callable[..., Any] | None, Path]:
     script_info = SCRIPT_REGISTRY[platform]
-    script_path = CODE_DIR / script_info["file"]
+    script_path = CODE_DIR / f"{script_info['module']}.py"
     if not script_path.exists():
         return None, script_path
 
-    module_name = f"job_hunter_{script_path.stem.replace('-', '_')}"
-    spec = importlib.util.spec_from_file_location(module_name, script_path)
+    module_name = f"job_hunter_skill.{script_info['module']}"
+    spec = importlib.util.find_spec(module_name)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"无法加载平台脚本：{script_path}")
 
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module = importlib.import_module(module_name)
 
     for func_name in script_info["functions"]:
         runner = getattr(module, func_name, None)

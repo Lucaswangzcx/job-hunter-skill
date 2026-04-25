@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from shared import (
+from job_hunter_skill.shared import (
     JobTask,
     append_log,
     load_log,
@@ -98,4 +98,3 @@ class SharedTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
 
-from shared import (
+from job_hunter_skill.shared import (
     JobTask,
     ScoreResult,
     append_log,

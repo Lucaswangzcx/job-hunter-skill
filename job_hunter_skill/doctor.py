@@ -1,4 +1,4 @@
-"""Environment self-check for the open-source Job Hunter release."""
+"""Job Hunter Skill 环境自检。"""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from shared import (
+from job_hunter_skill.shared import (
     CODE_DIR,
     PROJECT_NAME,
     PROJECT_VERSION,
@@ -82,7 +82,7 @@ def build_report(skill_dir: str | Path | None = None) -> dict[str, Any]:
         make_check(
             "config_file",
             "ok" if config_file.exists() else "warn",
-            "已找到 config.json。" if config_file.exists() else "未找到 config.json，可先复制 config.example.json 再修改。",
+            "已找到 config.json。" if config_file.exists() else "未找到 config.json，可先复制 examples/config.example.json 再修改。",
             path=str(config_file),
         )
     )

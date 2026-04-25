@@ -27,8 +27,7 @@ jobs:
         run: python -m unittest tests.test_core
 
       - name: Run doctor
-        run: python doctor.py --json
+        run: python -m job_hunter_skill.doctor --json
 
       - name: Run syntax check
-        run: python -m py_compile skill_entry.py shared.py boss_apply.py sxs_apply.py doctor.py tests/test_core.py
-
+        run: python -m py_compile job_hunter_skill/skill_entry.py job_hunter_skill/shared.py job_hunter_skill/boss_apply.py job_hunter_skill/sxs_apply.py job_hunter_skill/doctor.py tests/test_core.py

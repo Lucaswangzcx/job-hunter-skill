@@ -1,100 +1,126 @@
 ---
 name: job-hunter-skill
-description: Agent-ready job application automation for Chinese recruiting platforms using DrissionPage CDP browser takeover. Use when an agent needs to set up, configure, rehearse, run, debug, or extend automated job matching and applications for Boss直聘 or 实习僧, including resume/config preparation, safe rehearsal runs, formal apply runs, platform adapter maintenance, and repository checks.
+description: 面向中国大学生和求职者的求职投递自动化 skill。用于让 agent 帮用户准备简历和配置、检查环境、启动安全演练、在用户明确确认后执行正式投递，并维护 Boss直聘、实习僧等中国招聘平台的 DrissionPage/CDP 自动化适配器。触发场景包括自动投递、岗位匹配、Boss直聘、实习僧、安全演练、正式投递、求职配置、自检、浏览器接管、平台适配器维护。
 ---
 
-# Job Hunter Skill
+# 求职投递自动化 Skill
 
-Use this skill to help users run or maintain automated job matching and application flows for Boss直聘 and 实习僧. The automation uses `DrissionPage` plus CDP takeover of a browser the user started and logged into manually.
+用这个 skill 帮中国大学生和求职者在 Boss直聘、实习僧上做岗位匹配、投递前演练和正式投递。自动化方式是 `DrissionPage` 接管用户已经手动登录好的浏览器 CDP 端口。
 
-## Core Rules
+## 核心原则
 
-- Keep `rehearsal` as the default recommendation. Run `apply` only when the user explicitly asks for real submissions.
-- Require manual browser login before automation. Do not automate credential entry.
-- Use `DrissionPage` and CDP takeover only. Do not add Playwright or Selenium browser launchers.
-- Treat Boss直聘 and 实习僧 as independent platform adapters with separate ports and browser profiles.
-- Never commit or expose local/private runtime files: `config.json`, `resume.md`, `job-hunter.log`, `*-log.json`, `.job_hunter/`, `__pycache__/`, or `*.pyc`.
-- Keep user-facing examples and docs in Chinese.
-- Treat `SKILL.md` as the source of truth. Do not create parallel agent guide files.
+- 默认只做 `rehearsal` 安全演练，不真实投递。
+- 只有用户明确要求正式投递时，才运行 `apply`。
+- 正式投递前，必须再次说明“这会产生真实投递行为”。
+- 必须让用户自己启动浏览器并手动登录，不自动输入账号、密码或验证码。
+- 只使用 `DrissionPage + CDP 接管`，不要引入 Playwright 或 Selenium 启动浏览器。
+- Boss直聘和实习僧保持独立适配器、独立端口、独立浏览器用户目录。
+- 不读取、不输出、不提交用户隐私文件：`config.json`、`resume.md`、`resume.txt`、`job-hunter.log`、`*-log.json`、`.job_hunter/`。
+- 面向用户的说明和示例优先使用中文。
 
-## Read First
+## 目录导航
 
-Load only what is needed for the task:
+- `job_hunter_skill/skill_entry.py`：总入口，负责配置检查、任务收集和平台调度。
+- `job_hunter_skill/shared.py`：公共能力，包括配置、日志、评分、LLM、浏览器接管。
+- `job_hunter_skill/boss_apply.py`：Boss直聘适配器。
+- `job_hunter_skill/sxs_apply.py`：实习僧适配器。
+- `job_hunter_skill/doctor.py`：环境自检。
+- `examples/config.example.json`：配置模板。
+- `examples/resume.example.md`：简历模板。
+- `tests/test_core.py`：核心逻辑测试。
 
-- General use: `SKILL.md`, `config.example.json`, `resume.example.md`
-- CLI and dispatch flow: `skill_entry.py`, then `shared.py`
-- Environment checks: `doctor.py`
-- Platform behavior: `boss_apply.py` or `sxs_apply.py`
-- Tests: `tests/test_core.py`
+## 运行模型
 
-## Runtime Model
-
-- `skill_entry.py` is the main single-platform dispatcher.
-- Installed CLI commands are defined in `pyproject.toml`:
+- CLI 入口：
   - `job-hunter`
   - `job-hunter-doctor`
   - `job-hunter-boss`
   - `job-hunter-sxs`
-- Runtime data is resolved from `--skill-dir`, `JOB_HUNTER_HOME`, or the current working directory.
-- Default CDP ports are Boss直聘 `9222` and 实习僧 `9223`.
-- `config.example.json` and `resume.example.md` are templates. The user's real `config.json` and `resume.md` stay local and untracked.
+- 运行目录由 `--skill-dir`、`JOB_HUNTER_HOME` 或当前目录决定。
+- 运行目录里放用户自己的 `config.json`、`resume.md` 和日志。
+- 默认端口：
+  - Boss直聘：`9222`
+  - 实习僧：`9223`
 
-## Common Workflows
+## 首次使用
 
-### Set up or inspect a user run
+1. 安装依赖：
 
-1. Confirm dependencies are installed: `python -m pip install -e .`
-2. Ask the user to copy `config.example.json` to `config.json` and `resume.example.md` to `resume.md` in their chosen runtime directory when private files are not present.
-3. Run `python doctor.py --json` or `job-hunter-doctor --json`.
-4. If browser checks fail, show the relevant browser command below and ask the user to log in manually.
+```bash
+python -m pip install -e .
+```
 
-Boss直聘:
+2. 准备用户私有运行文件：
+
+```powershell
+Copy-Item examples/config.example.json config.json
+Copy-Item examples/resume.example.md resume.md
+```
+
+3. 让用户编辑 `resume.md` 和 `config.json`。
+
+4. 运行自检：
+
+```bash
+python -m job_hunter_skill.doctor --json
+```
+
+## 浏览器登录
+
+Boss直聘：
 
 ```powershell
 & "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=9222 --user-data-dir=".job_hunter/browser/boss"
 ```
 
-实习僧:
+实习僧：
 
 ```powershell
 & "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=9223 --user-data-dir=".job_hunter/browser/sxs"
 ```
 
-### Rehearse before applying
+打开后让用户手动登录，并保持浏览器窗口打开。
 
-Prefer this command shape:
+## 安全演练
+
+优先运行安全演练：
 
 ```bash
 job-hunter --platform boss --mode rehearsal --job "Java开发实习生" --city 北京 --count 1 --skill-dir /path/to/runtime
 ```
 
-Use `--platform sxs` for 实习僧. Use `--yes` only after the user confirms the correct browser is open and logged in.
+实习僧使用：
 
-### Run real applications
+```bash
+job-hunter --platform sxs --mode rehearsal --job "Java开发实习生" --city 北京 --count 1 --skill-dir /path/to/runtime
+```
 
-Use formal apply mode only after explicit user confirmation:
+只有当用户确认浏览器已登录，才可以加 `--yes`。
+
+## 正式投递
+
+正式投递必须由用户明确要求：
 
 ```bash
 job-hunter --platform boss --mode apply --job "Java开发实习生" --city 北京 --count 1 --min-score 80 --skill-dir /path/to/runtime
 ```
 
-Before running, restate that this can submit real applications.
+如果用户只是说“帮我看看”“跑一下”“测试一下”，默认仍然使用 `rehearsal`。
 
-### Modify or extend the project
+## 修改或扩展
 
-1. Keep changes small and local to the relevant module.
-2. For new platforms, add `<platform>_apply.py`, implement `apply_jobs(task, config, browser, skill_dir)`, register it in `skill_entry.py`, and update defaults/aliases in `shared.py`.
-3. If behavior changes, update this `SKILL.md` and the concise `README.md` in the same change.
-4. Run repository checks before finishing.
+1. 小步修改，只碰相关模块。
+2. 新增平台时，新增 `job_hunter_skill/<platform>_apply.py`，实现 `apply_jobs(task, config, browser, skill_dir)`。
+3. 在 `job_hunter_skill/skill_entry.py` 注册平台。
+4. 在 `job_hunter_skill/shared.py` 补平台别名、默认端口和浏览器目录。
+5. 行为变化时，同步更新 `SKILL.md` 和 `README.md`。
 
-## Validation
-
-Use the checks that match the task:
+## 验证
 
 ```bash
-python doctor.py --json
+python -m job_hunter_skill.doctor --json
 python -m unittest tests.test_core
-python -m py_compile skill_entry.py shared.py boss_apply.py sxs_apply.py doctor.py tests/test_core.py
+python -m py_compile job_hunter_skill/skill_entry.py job_hunter_skill/shared.py job_hunter_skill/boss_apply.py job_hunter_skill/sxs_apply.py job_hunter_skill/doctor.py tests/test_core.py
 ```
 
-If a check cannot run because dependencies, credentials, a logged-in browser, or network access are missing, report that clearly and keep the user on `rehearsal` until the environment is ready.
+如果因为未安装依赖、未登录浏览器、缺少私有配置或端口未监听导致检查失败，要清楚说明原因，并继续建议用户先跑 `rehearsal`。
