@@ -10,6 +10,7 @@ from job_hunter_skill.shared import (
     JobTask,
     append_log,
     initialize_config_from_resume,
+    heuristic_extract_skills,
     keyword_in_text,
     load_log,
     log_bucket_items,
@@ -193,6 +194,20 @@ class SharedTests(unittest.TestCase):
             skills,
             ["Java", "Spring Boot", "MySQL", "Redis", "Git", "Linux", "Docker", "SQL"],
         )
+
+    def test_heuristic_extract_skills_filters_contact_noise(self) -> None:
+        skills = heuristic_extract_skills(
+            "邮箱 candidate123@example.com mailto:test https://github.com/example-user "
+            "熟悉 Java Spring Boot MySQL Redis Git Docker SQL。"
+        )
+
+        lowered = {item.lower() for item in skills}
+        self.assertIn("java", lowered)
+        self.assertIn("mysql", lowered)
+        self.assertNotIn("candidate123", lowered)
+        self.assertNotIn("example.com", lowered)
+        self.assertNotIn("mailto", lowered)
+        self.assertNotIn("https", lowered)
 
 
 if __name__ == "__main__":

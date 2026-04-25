@@ -179,6 +179,7 @@ CHINESE_STOPWORDS = {
     "项目",
     "经验",
     "能力",
+    "使用",
     "熟悉",
     "能够",
     "进行",
@@ -222,6 +223,13 @@ ENGLISH_STOPWORDS = {
     "experience",
     "skills",
     "resume",
+    "name",
+    "email",
+    "mailto",
+    "http",
+    "https",
+    "www",
+    "com",
 }
 
 _LOGGER_NAMES: set[str] = set()
@@ -947,9 +955,16 @@ def heuristic_extract_skills(resume_text: str, limit: int = 15) -> list[str]:
         candidate = candidate.strip(" ,，。；;:/")
         if len(candidate) < 2:
             return
-        if candidate.lower() in ENGLISH_STOPWORDS or candidate in CHINESE_STOPWORDS:
+        candidate_lower = candidate.lower()
+        if any(marker in candidate_lower for marker in ("@", "mailto", "http://", "https://", "www.", "github.com")):
             return
-        if candidate.lower() not in {item.lower() for item in matches}:
+        if any(char.isdigit() for char in candidate):
+            return
+        if "." in candidate and candidate_lower not in {"node.js"}:
+            return
+        if candidate_lower in ENGLISH_STOPWORDS or candidate in CHINESE_STOPWORDS:
+            return
+        if candidate_lower not in {item.lower() for item in matches}:
             matches.append(candidate)
 
     for keyword in COMMON_SKILL_KEYWORDS:
