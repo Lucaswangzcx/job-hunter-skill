@@ -57,6 +57,7 @@
 
 先看这些说明文件：
 
+- [SKILL.md](./SKILL.md) - 标准 Agent/Codex skill 入口
 - [CLAUDE.md](./CLAUDE.md)
 - [CODEBUDDY.md](./CODEBUDDY.md)
 - [TRAE.md](./TRAE.md)
@@ -356,6 +357,16 @@ python -m py_compile skill_entry.py shared.py boss_apply.py sxs_apply.py doctor.
 ```
 
 CI 配置在 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)。
+
+## 作为 Agent Skill 使用
+
+这个仓库已经包含标准 skill 入口 [SKILL.md](./SKILL.md)。如果要让 Codex 这类 agent 自动发现它，可以把整个仓库安装或复制到本机 skills 目录，例如：
+
+```powershell
+robocopy . "$env:USERPROFILE\.codex\skills\job-hunter-skill" /E /XD .git .job_hunter __pycache__ /XF config.json resume.md job-hunter.log *-log.json
+```
+
+安装后重启 Codex。后续可以直接让 agent 使用 `$job-hunter-skill` 来准备配置、自检、运行安全演练或维护平台适配器。
 
 ## 风险说明
 

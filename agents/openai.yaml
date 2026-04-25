@@ -1,0 +1,7 @@
+interface:
+  display_name: "Job Hunter Skill"
+  short_description: "Automate Chinese job search rehearsals and applications"
+  default_prompt: "Use $job-hunter-skill to set up a safe rehearsal run for Boss直聘 or 实习僧."
+
+policy:
+  allow_implicit_invocation: true

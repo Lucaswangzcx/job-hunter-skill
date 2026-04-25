@@ -5,6 +5,7 @@
 ## 先看入口
 
 - [README.md](../README.md)：总说明和使用方法
+- [SKILL.md](../SKILL.md)：标准 Agent/Codex skill 入口
 - [CLAUDE.md](../CLAUDE.md)：给 Claude 系列 agent 的说明
 - [CODEBUDDY.md](../CODEBUDDY.md)：给 CodeBuddy 的说明
 - [TRAE.md](../TRAE.md)：给 Trae 的说明
@@ -49,6 +50,7 @@
 ## 最短上手路径
 
 1. 先看 `README.md`
-2. 再看 `config.example.json`
-3. 然后看 `skill_entry.py`
-4. 最后分别看 `boss_apply.py` 和 `sxs_apply.py`
+2. 如果你是 agent，先看 `SKILL.md`
+3. 再看 `config.example.json`
+4. 然后看 `skill_entry.py`
+5. 最后分别看 `boss_apply.py` 和 `sxs_apply.py`
