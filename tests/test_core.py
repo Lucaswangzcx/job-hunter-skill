@@ -16,6 +16,7 @@ from job_hunter_skill.shared import (
     platform_user_data_dir,
     resolve_skill_dir,
     save_log,
+    sanitize_json_text,
     score_jd,
     split_keywords,
     start_log_run,
@@ -149,6 +150,11 @@ class SharedTests(unittest.TestCase):
 
         self.assertEqual(cfg["scoring"]["role_title_score"], 42)
         self.assertIn("skill_score_each", cfg["scoring"])
+
+    def test_sanitize_json_text_removes_surrogates(self) -> None:
+        cleaned = sanitize_json_text({"skills": ["Java\udc80"]})
+
+        self.assertEqual(cleaned, {"skills": ["Java "]})
 
 
 if __name__ == "__main__":

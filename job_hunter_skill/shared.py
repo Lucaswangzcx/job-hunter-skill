@@ -345,8 +345,18 @@ def load_config(skill_dir: str | Path | None = None) -> dict[str, Any]:
 def save_config(config: dict[str, Any], skill_dir: str | Path | None = None) -> Path:
     cfg_file = config_path(skill_dir)
     cfg_file.parent.mkdir(parents=True, exist_ok=True)
-    cfg_file.write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding="utf-8")
+    cfg_file.write_text(json.dumps(sanitize_json_text(config), ensure_ascii=False, indent=2), encoding="utf-8")
     return cfg_file
+
+
+def sanitize_json_text(value: Any) -> Any:
+    if isinstance(value, str):
+        return re.sub(r"[\ud800-\udfff]", " ", value)
+    if isinstance(value, list):
+        return [sanitize_json_text(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): sanitize_json_text(item) for key, item in value.items()}
+    return value
 
 
 def current_timestamp() -> str:
@@ -648,6 +658,7 @@ def run_mode_label(mode: str) -> str:
 
 
 def normalize_text(text: str) -> str:
+    text = re.sub(r"[\ud800-\udfff]", " ", text)
     text = re.sub(r"&#x?[0-9a-fA-F]+;", " ", text)
     text = re.sub(r"[\ue000-\uf8ff]", " ", text)
     text = text.replace("\u3000", " ").replace("\ufeff", " ").replace("\u200b", " ")

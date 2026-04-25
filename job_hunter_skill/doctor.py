@@ -82,7 +82,7 @@ def build_report(skill_dir: str | Path | None = None) -> dict[str, Any]:
         make_check(
             "config_file",
             "ok" if config_file.exists() else "warn",
-            "已找到 config.json。" if config_file.exists() else "未找到 config.json，可先复制 examples/config.example.json 再修改。",
+            "已找到 config.json。" if config_file.exists() else "未找到 config.json；首次运行 job-hunter 会引导你根据 resume.md 生成。",
             path=str(config_file),
         )
     )
@@ -114,7 +114,7 @@ def build_report(skill_dir: str | Path | None = None) -> dict[str, Any]:
             make_check(
                 "resume_file",
                 "warn",
-                "尚未配置 resume_path。",
+                "尚未配置 resume_path；请先把 resume.md 放到运行目录，首次运行会提示确认路径。",
             )
         )
 

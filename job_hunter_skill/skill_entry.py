@@ -443,7 +443,8 @@ def main() -> int:
         if args.min_score is not None:
             runtime_config["min_score"] = int(args.min_score)
         print_line(
-            f"当前配置：目标岗位={config.get('target_roles') or []}，"
+            f"当前配置：目标岗位 {len(config.get('target_roles') or [])} 个，"
+            f"skills {len(config.get('skills') or [])} 个，"
             f"最低投递分={runtime_config.get('min_score', 80)}，"
             f"默认模式={run_mode_label(normalize_run_mode(None, runtime_config))}。"
         )
