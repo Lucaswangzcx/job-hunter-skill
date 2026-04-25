@@ -23,6 +23,25 @@
     "boss": ".job_hunter/browser/boss",
     "sxs": ".job_hunter/browser/sxs"
   },
+  "scoring": {
+    "role_title_score": 30,
+    "skill_score_each": 5,
+    "skill_score_cap": 30,
+    "llm_score_min": 1,
+    "llm_score_max": 40,
+    "heuristic_base_score": 6,
+    "heuristic_skill_score_each": 4,
+    "heuristic_skill_score_cap": 20,
+    "heuristic_role_score": 8,
+    "heuristic_bonus_keywords": [
+      "ai",
+      "llm",
+      "模型",
+      "自动化",
+      "数据"
+    ],
+    "heuristic_bonus_score": 4
+  },
   "llm": {
     "base_url": "",
     "api_key": "",

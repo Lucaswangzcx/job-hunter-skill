@@ -12,11 +12,13 @@ from pathlib import Path
 from typing import Any, Callable
 
 from job_hunter_skill.shared import (
+    DEFAULT_GREETING,
     JobTask,
     PROJECT_NAME,
     PROJECT_VERSION,
     connect_browser,
     dedupe_keep_order,
+    default_config,
     get_logger,
     initialize_config_from_resume,
     load_config,
@@ -85,9 +87,51 @@ def prompt_int(label: str, default: int) -> int:
         print_line("请输入大于 0 的整数。")
 
 
+def prompt_nonnegative_int(label: str, default: int) -> int:
+    while True:
+        raw = input(f"{label} [{default}]: ").strip()
+        if not raw:
+            return default
+        if raw.isdigit():
+            return int(raw)
+        print_line("请输入大于等于 0 的整数。")
+
+
 def prompt_keywords(label: str, default: str | None = None) -> list[str]:
     text = prompt_text(label, default=default, required=False)
     return split_keywords(text)
+
+
+def prompt_scoring(defaults: dict[str, Any]) -> dict[str, Any]:
+    print_line("\n评分标准会写入 config.json，你后续可以按自己的情况修改。")
+    return {
+        "role_title_score": prompt_nonnegative_int("岗位标题命中 target_roles 加分", int(defaults.get("role_title_score", 30))),
+        "skill_score_each": prompt_nonnegative_int("每命中一个 skills 关键词加分", int(defaults.get("skill_score_each", 5))),
+        "skill_score_cap": prompt_nonnegative_int("skills 关键词总加分上限", int(defaults.get("skill_score_cap", 30))),
+        "llm_score_min": prompt_nonnegative_int("LLM/启发式补分最低分", int(defaults.get("llm_score_min", 1))),
+        "llm_score_max": prompt_nonnegative_int("LLM/启发式补分最高分", int(defaults.get("llm_score_max", 40))),
+        "heuristic_base_score": prompt_nonnegative_int("未配置 LLM 时的基础补分", int(defaults.get("heuristic_base_score", 6))),
+        "heuristic_skill_score_each": prompt_nonnegative_int(
+            "未配置 LLM 时每个技能命中的补分",
+            int(defaults.get("heuristic_skill_score_each", 4)),
+        ),
+        "heuristic_skill_score_cap": prompt_nonnegative_int(
+            "未配置 LLM 时技能补分上限",
+            int(defaults.get("heuristic_skill_score_cap", 20)),
+        ),
+        "heuristic_role_score": prompt_nonnegative_int(
+            "未配置 LLM 时岗位命中的补分",
+            int(defaults.get("heuristic_role_score", 8)),
+        ),
+        "heuristic_bonus_keywords": prompt_keywords(
+            "未配置 LLM 时的额外补分关键词",
+            ",".join(str(item) for item in defaults.get("heuristic_bonus_keywords", [])),
+        ),
+        "heuristic_bonus_score": prompt_nonnegative_int(
+            "命中额外补分关键词时加分",
+            int(defaults.get("heuristic_bonus_score", 4)),
+        ),
+    }
 
 
 def normalize_single_platform(raw: str) -> str:
@@ -144,33 +188,81 @@ def ensure_resume_ready(config: dict[str, Any], *, skill_dir: Path) -> dict[str,
 
 
 def first_run_setup(*, skill_dir: Path) -> dict[str, Any]:
-    print_line("\n[Step 1] 首次引导：生成 config.json")
+    print_line("\n[Step 1] 首次引导：准备 resume.md 并生成 config.json")
     default_resume = skill_dir / "resume.md"
-    resume_default = str(default_resume) if default_resume.exists() else None
+    defaults = default_config()
+    resume_default = str(default_resume)
+
+    print_line(f"请先把你的简历保存为 resume.md，放到运行目录：{default_resume}")
+    print_line("如果简历放在其他位置，也可以在下面输入完整路径。")
+    print_line("接下来除 skills 外，其他配置项都由你填写；skills 会根据简历自动抽取 8-15 个关键点。")
 
     while True:
         resume_path = prompt_text("请输入 resume.md / resume.txt 路径", default=resume_default)
-        target_roles = prompt_keywords("请输入期望岗位关键词（多个用逗号分隔，例如 产品经理,AI产品经理）")
-        exclude_keywords = prompt_keywords("请输入排除关键词（多个用逗号分隔，例如 总监,销售）")
+        try:
+            read_resume_text(resume_path, skill_dir=skill_dir)
+        except Exception as exc:
+            print_line(f"简历文件暂时不可用：{exc}")
+            print_line("请先把 resume.md 放到指定位置，或输入正确路径。\n")
+            continue
+
+        greeting = prompt_text("请输入打招呼话术", default=DEFAULT_GREETING)
+        target_roles = prompt_keywords("请输入期望岗位关键词（多个用逗号分隔，例如 Java开发实习生,后端开发实习生）")
+        exclude_keywords = prompt_keywords("请输入排除关键词（多个用逗号分隔，例如 销售,客服,培训）")
+        min_score = prompt_int("最低匹配分阈值", int(defaults.get("min_score", 80)))
+        default_count = prompt_int("默认检查/投递数量", int(defaults.get("default_count", 20)))
+        default_mode = prompt_mode({**defaults, "default_mode": defaults.get("default_mode", "rehearsal")})
+        boss_port = prompt_int("Boss直聘浏览器 CDP 端口", int(defaults["platform_ports"]["boss"]))
+        sxs_port = prompt_int("实习僧浏览器 CDP 端口", int(defaults["platform_ports"]["sxs"]))
+        boss_user_data_dir = prompt_text(
+            "Boss直聘浏览器用户目录",
+            default=str(defaults["user_data_dirs"]["boss"]),
+        )
+        sxs_user_data_dir = prompt_text(
+            "实习僧浏览器用户目录",
+            default=str(defaults["user_data_dirs"]["sxs"]),
+        )
+        llm_base_url = prompt_text("LLM base_url（可留空）", default="", required=False)
+        llm_api_key = prompt_text("LLM api_key（可留空，也可改用环境变量）", default="", required=False)
+        llm_model = prompt_text("LLM model（可留空）", default=str(defaults["llm"]["model"]), required=False)
+        scoring = prompt_scoring(defaults.get("scoring", {}))
+        manual_config = {
+            "greeting": greeting,
+            "target_roles": target_roles,
+            "exclude_keywords": exclude_keywords,
+            "min_score": min_score,
+            "default_count": default_count,
+            "default_mode": default_mode,
+            "platform_ports": {"boss": boss_port, "sxs": sxs_port},
+            "user_data_dirs": {"boss": boss_user_data_dir, "sxs": sxs_user_data_dir},
+            "scoring": scoring,
+            "llm": {
+                "base_url": llm_base_url,
+                "api_key": llm_api_key,
+                "model": llm_model or defaults["llm"]["model"],
+                "timeout": int(defaults["llm"]["timeout"]),
+                "temperature": float(defaults["llm"]["temperature"]),
+            },
+        }
 
         try:
             config, profile = initialize_config_from_resume(
                 resume_path,
                 target_roles=target_roles,
                 exclude_keywords=exclude_keywords,
+                base_config=manual_config,
                 skill_dir=skill_dir,
             )
+            config["greeting"] = greeting
             config_path = save_config(config, skill_dir=skill_dir)
-            preview = {
-                "resume_path": config["resume_path"],
-                "target_roles": config["target_roles"],
-                "exclude_keywords": config["exclude_keywords"],
-                "skills": config["skills"],
-                "greeting": config["greeting"],
-                "min_score": config["min_score"],
-            }
             print_line(f"\n已生成配置文件：{config_path}")
-            print_line(json.dumps(preview, ensure_ascii=False, indent=2))
+            print_line(
+                "已写入本地私有配置："
+                f"目标岗位 {len(config['target_roles'])} 个，"
+                f"排除关键词 {len(config['exclude_keywords'])} 个，"
+                f"自动抽取 skills {len(config['skills'])} 个，"
+                f"最低分阈值 {config['min_score']}。"
+            )
             print_line(f"初始化方式：{profile['source']} | {profile['note']}")
             return config
         except Exception as exc:
@@ -180,6 +272,10 @@ def first_run_setup(*, skill_dir: Path) -> dict[str, Any]:
 
 def collect_task(config: dict[str, Any], args: argparse.Namespace) -> JobTask:
     print_line("\n[Step 2] 收集本次投递任务信息")
+    if args.platform:
+        platform = normalize_single_platform(args.platform)
+    else:
+        platform = prompt_platform()
     target_roles = list(config.get("target_roles") or [])
     default_job = target_roles[0] if target_roles else None
     job_name = args.job or prompt_text("本次搜索岗位名", default=default_job)
@@ -188,10 +284,6 @@ def collect_task(config: dict[str, Any], args: argparse.Namespace) -> JobTask:
     city = args.city or prompt_text("目标城市")
     count = args.count if args.count and args.count > 0 else prompt_int("投递数量", int(config.get("default_count", 20) or 20))
     mode = normalize_run_mode(args.mode, config) if args.mode else prompt_mode(config)
-    if args.platform:
-        platform = normalize_single_platform(args.platform)
-    else:
-        platform = prompt_platform()
     return JobTask(job_name=job_name, city=city, count=count, platforms=[platform], mode=mode)
 
 

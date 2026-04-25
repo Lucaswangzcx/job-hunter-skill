@@ -42,14 +42,20 @@ robocopy . "$env:USERPROFILE\.codex\skills\job-hunter-skill" /E /XD .git .job_hu
 
 重启 Codex 后即可用 `$job-hunter-skill`。
 
-## 本地准备
+## 首次使用
 
 ```powershell
-Copy-Item examples/config.example.json config.json
 Copy-Item examples/resume.example.md resume.md
 ```
 
-然后把 `resume.md` 和 `config.json` 改成自己的内容。这两个文件不会提交到 GitHub。
+先把 `resume.md` 改成自己的简历，并放在运行目录。第一次运行 `job-hunter` 时，如果没有 `config.json`，skill 会进入引导流程：
+
+- 提示用户确认 `resume.md` 的位置。
+- 让用户填写打招呼话术、目标岗位、排除关键词、端口、运行模式、阈值和评分标准。
+- 不让用户手写 `skills`，而是根据简历自动抽取 8-15 个关键点。
+- 生成本地私有 `config.json`。
+
+`config.json`、`resume.md` 和日志都不会提交到 GitHub。
 
 ## 搜索和评分
 
@@ -57,6 +63,7 @@ Copy-Item examples/resume.example.md resume.md
 - 未传 `--job` 时，默认使用 `config.json` 里 `target_roles` 的第一个岗位。
 - 本次搜索词会临时加入评分用 `target_roles`，避免搜索岗位和岗位加分标准不一致。
 - 关键词匹配会容忍常见空格差异，例如 `Java开发实习生` 可以命中 `Java 开发实习生`。
+- 评分权重集中放在 `config.json` 的 `scoring` 段，用户可以按自身情况调整岗位命中、技能命中和 LLM/启发式补分。
 
 ## 检查
 

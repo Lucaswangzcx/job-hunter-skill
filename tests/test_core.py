@@ -10,6 +10,7 @@ from job_hunter_skill.shared import (
     keyword_in_text,
     load_log,
     log_bucket_items,
+    merge_config,
     normalize_platforms,
     normalize_run_mode,
     platform_user_data_dir,
@@ -115,6 +116,39 @@ class SharedTests(unittest.TestCase):
 
         self.assertEqual(result.role_hit, "Java开发实习生")
         self.assertEqual(result.rule_score, 45)
+
+    def test_score_jd_uses_configurable_scoring(self) -> None:
+        result = score_jd(
+            "Java 开发实习生",
+            "岗位要求：熟悉 Java、MySQL、SQL。",
+            {
+                "target_roles": ["Java开发实习生"],
+                "skills": ["Java", "MySQL", "SQL"],
+                "min_score": 80,
+                "scoring": {
+                    "role_title_score": 40,
+                    "skill_score_each": 6,
+                    "skill_score_cap": 12,
+                    "heuristic_base_score": 0,
+                    "heuristic_skill_score_each": 0,
+                    "heuristic_skill_score_cap": 0,
+                    "heuristic_role_score": 0,
+                    "heuristic_bonus_keywords": [],
+                    "heuristic_bonus_score": 0,
+                },
+            },
+            resume_text="",
+        )
+
+        self.assertEqual(result.rule_score, 52)
+        self.assertIn("岗位加分: Java开发实习生(+40)", result.reason)
+        self.assertIn("技能命中: Java/MySQL/SQL(+12)", result.reason)
+
+    def test_merge_config_keeps_default_scoring_keys(self) -> None:
+        cfg = merge_config({"scoring": {"role_title_score": 42}})
+
+        self.assertEqual(cfg["scoring"]["role_title_score"], 42)
+        self.assertIn("skill_score_each", cfg["scoring"])
 
 
 if __name__ == "__main__":

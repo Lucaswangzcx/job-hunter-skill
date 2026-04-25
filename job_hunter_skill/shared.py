@@ -33,6 +33,19 @@ DEFAULT_USER_DATA_DIRS = {
     "boss": ".job_hunter/browser/boss",
     "sxs": ".job_hunter/browser/sxs",
 }
+DEFAULT_SCORING = {
+    "role_title_score": 30,
+    "skill_score_each": 5,
+    "skill_score_cap": 30,
+    "llm_score_min": 1,
+    "llm_score_max": 40,
+    "heuristic_base_score": 6,
+    "heuristic_skill_score_each": 4,
+    "heuristic_skill_score_cap": 20,
+    "heuristic_role_score": 8,
+    "heuristic_bonus_keywords": ["ai", "llm", "模型", "自动化", "数据"],
+    "heuristic_bonus_score": 4,
+}
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "resume_path": "",
@@ -45,6 +58,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "default_mode": "rehearsal",
     "platform_ports": DEFAULT_PLATFORM_PORTS,
     "user_data_dirs": DEFAULT_USER_DATA_DIRS,
+    "scoring": DEFAULT_SCORING,
     "llm": {
         "base_url": "",
         "api_key": "",
@@ -273,11 +287,22 @@ def merge_config(config: dict[str, Any] | None = None) -> dict[str, Any]:
     for key, value in config.items():
         if key == "llm" and isinstance(value, dict):
             merged["llm"].update(value)
-        elif key in {"platform_ports", "user_data_dirs"} and isinstance(value, dict):
+        elif key in {"platform_ports", "user_data_dirs", "scoring"} and isinstance(value, dict):
             merged[key].update(value)
         else:
             merged[key] = value
     return merged
+
+
+def scoring_config(config: dict[str, Any] | None = None) -> dict[str, Any]:
+    return dict(merge_config(config).get("scoring", DEFAULT_SCORING))
+
+
+def scoring_int(scoring: dict[str, Any], key: str, default: int) -> int:
+    try:
+        return int(scoring.get(key, default))
+    except (TypeError, ValueError):
+        return default
 
 
 def get_logger(name: str = "job-hunter", skill_dir: str | Path | None = None) -> logging.Logger:
@@ -902,7 +927,7 @@ def build_llm_client(config: dict[str, Any] | None = None) -> LLMClient:
     return LLMClient(effective_llm_settings(config))
 
 
-def heuristic_extract_skills(resume_text: str, limit: int = 12) -> list[str]:
+def heuristic_extract_skills(resume_text: str, limit: int = 15) -> list[str]:
     normalized = normalize_text(resume_text)
     lowered = normalized.lower()
     matches: list[str] = []
@@ -1053,14 +1078,26 @@ def heuristic_llm_score(
     role_hit: str | None,
     skill_hits: list[str],
     jd_text: str,
+    scoring: dict[str, Any] | None = None,
 ) -> tuple[int, str]:
-    score = 6 + min(len(skill_hits) * 4, 20)
+    score_rules = scoring_config({"scoring": scoring or {}})
+    score = scoring_int(score_rules, "heuristic_base_score", 6)
+    score += min(
+        len(skill_hits) * scoring_int(score_rules, "heuristic_skill_score_each", 4),
+        scoring_int(score_rules, "heuristic_skill_score_cap", 20),
+    )
     if role_hit:
-        score += 8
+        score += scoring_int(score_rules, "heuristic_role_score", 8)
     jd_lower = jd_text.lower()
-    if any(token in jd_lower for token in ("ai", "llm", "模型", "自动化", "数据")):
-        score += 4
-    score = max(1, min(score, 40))
+    bonus_keywords = score_rules.get("heuristic_bonus_keywords", [])
+    if any(str(token).lower() in jd_lower for token in bonus_keywords):
+        score += scoring_int(score_rules, "heuristic_bonus_score", 4)
+    llm_min = scoring_int(score_rules, "llm_score_min", 1)
+    llm_max = max(llm_min, scoring_int(score_rules, "llm_score_max", 40))
+    score = max(
+        llm_min,
+        min(score, llm_max),
+    )
     return score, "未配置 LLM，按技能重合和岗位相关性做估算。"
 
 
@@ -1071,18 +1108,22 @@ def llm_match_score(
     resume_text: str,
     role_hit: str | None,
     skill_hits: list[str],
+    scoring: dict[str, Any] | None = None,
     llm_client: LLMClient | None = None,
 ) -> tuple[int, str]:
     llm_client = llm_client or build_llm_client()
+    score_rules = scoring_config({"scoring": scoring or {}})
+    llm_min = scoring_int(score_rules, "llm_score_min", 1)
+    llm_max = max(llm_min, scoring_int(score_rules, "llm_score_max", 40))
     if not resume_text.strip() or not llm_client.is_configured():
-        return heuristic_llm_score(role_hit=role_hit, skill_hits=skill_hits, jd_text=jd_text)
+        return heuristic_llm_score(role_hit=role_hit, skill_hits=skill_hits, jd_text=jd_text, scoring=score_rules)
 
     try:
         payload = llm_client.chat_json(
             (
-                "你是求职匹配评分器。你会阅读候选人简历和职位 JD，给出 1-40 分的补充评分。"
+                f"你是求职匹配评分器。你会阅读候选人简历和职位 JD，给出 {llm_min}-{llm_max} 分的补充评分。"
                 "评分只反映简历与 JD 的真实匹配度，不要重复基础关键词计分。"
-                "只输出 JSON：{\"score\":1-40,\"reason\":\"不超过 60 字\"}。"
+                f"只输出 JSON：{{\"score\":{llm_min}-{llm_max},\"reason\":\"不超过 60 字\"}}。"
             ),
             (
                 f"岗位标题：{title}\n\n"
@@ -1093,11 +1134,11 @@ def llm_match_score(
             temperature=0.1,
         )
         score = int(payload.get("score", 0))
-        score = max(1, min(score, 40))
+        score = max(llm_min, min(score, llm_max))
         reason = clamp_text(str(payload.get("reason") or "LLM 认为岗位匹配度中等。"), 60)
         return score, reason
     except Exception:
-        return heuristic_llm_score(role_hit=role_hit, skill_hits=skill_hits, jd_text=jd_text)
+        return heuristic_llm_score(role_hit=role_hit, skill_hits=skill_hits, jd_text=jd_text, scoring=score_rules)
 
 
 def score_jd(
@@ -1110,6 +1151,10 @@ def score_jd(
     llm_client: LLMClient | None = None,
 ) -> ScoreResult:
     cfg = merge_config(config)
+    score_rules = scoring_config(cfg)
+    role_title_score = scoring_int(score_rules, "role_title_score", 30)
+    skill_score_each = scoring_int(score_rules, "skill_score_each", 5)
+    skill_score_cap = scoring_int(score_rules, "skill_score_cap", 30)
     title_clean = normalize_text(title)
     jd_clean = sanitize_jd_text(jd_text)
     combined = f"{title_clean}\n{jd_clean}"
@@ -1132,7 +1177,7 @@ def score_jd(
     for role in cfg.get("target_roles", []):
         if keyword_in_text(role, title_clean):
             role_hit = role
-            rule_score += 30
+            rule_score += role_title_score
             break
 
     skill_hits = [
@@ -1141,7 +1186,8 @@ def score_jd(
         if keyword_in_text(skill, combined)
     ]
     skill_hits = dedupe_keep_order(skill_hits)
-    rule_score += min(len(skill_hits) * 5, 30)
+    skill_score = min(len(skill_hits) * skill_score_each, skill_score_cap)
+    rule_score += skill_score
 
     if resume_text is None and cfg.get("resume_path"):
         try:
@@ -1155,6 +1201,7 @@ def score_jd(
         resume_text=resume_text or "",
         role_hit=role_hit,
         skill_hits=skill_hits,
+        scoring=score_rules,
         llm_client=llm_client or build_llm_client(cfg),
     )
 
@@ -1163,9 +1210,9 @@ def score_jd(
 
     reason_parts: list[str] = []
     if role_hit:
-        reason_parts.append(f"岗位加分: {role_hit}(+30)")
+        reason_parts.append(f"岗位加分: {role_hit}(+{role_title_score})")
     if skill_hits:
-        reason_parts.append(f"技能命中: {'/'.join(skill_hits[:6])}(+{min(len(skill_hits) * 5, 30)})")
+        reason_parts.append(f"技能命中: {'/'.join(skill_hits[:6])}(+{skill_score})")
     reason_parts.append(f"LLM补分: +{llm_score}")
     reason_parts.append(f"阈值: {cfg.get('min_score', 80)}")
 
