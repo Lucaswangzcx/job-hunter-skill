@@ -16,6 +16,7 @@ from job_hunter_skill.shared import (
     PROJECT_NAME,
     PROJECT_VERSION,
     connect_browser,
+    dedupe_keep_order,
     get_logger,
     initialize_config_from_resume,
     load_config,
@@ -179,8 +180,11 @@ def first_run_setup(*, skill_dir: Path) -> dict[str, Any]:
 
 def collect_task(config: dict[str, Any], args: argparse.Namespace) -> JobTask:
     print_line("\n[Step 2] 收集本次投递任务信息")
-    default_job = config.get("target_roles", [""])[0] if config.get("target_roles") else None
+    target_roles = list(config.get("target_roles") or [])
+    default_job = target_roles[0] if target_roles else None
     job_name = args.job or prompt_text("本次搜索岗位名", default=default_job)
+    if job_name:
+        config["target_roles"] = dedupe_keep_order([job_name, *target_roles])
     city = args.city or prompt_text("目标城市")
     count = args.count if args.count and args.count > 0 else prompt_int("投递数量", int(config.get("default_count", 20) or 20))
     mode = normalize_run_mode(args.mode, config) if args.mode else prompt_mode(config)
@@ -300,6 +304,7 @@ def dispatch_platforms(task: JobTask, config: dict[str, Any], *, skill_dir: Path
                 )
                 continue
 
+            print_line(f"{label} 将接管你已手动打开的浏览器端口 {debug_port}。")
             browser = connect_browser(debug_port=debug_port)
             platform_task = JobTask(
                 job_name=task.job_name,
@@ -309,7 +314,7 @@ def dispatch_platforms(task: JobTask, config: dict[str, Any], *, skill_dir: Path
                 mode=task.mode,
                 debug_port=debug_port,
             )
-            print_line(f"{label} 将使用浏览器端口 {debug_port}。")
+            print_line(f"{label} 搜索词：{platform_task.job_name}")
             result = invoke_runner(
                 runner,
                 task=platform_task,

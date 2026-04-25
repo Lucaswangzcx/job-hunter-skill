@@ -26,6 +26,7 @@
 - 正式投递模式：`apply`
 
 自动化方式是 `DrissionPage + CDP 端口接管`。用户必须自己启动浏览器并手动登录，skill 不接管账号密码。
+执行前会检查目标 CDP 端口是否已监听；端口未打开时直接报错，不自动新开浏览器。
 
 ## 安装
 
@@ -49,6 +50,13 @@ Copy-Item examples/resume.example.md resume.md
 ```
 
 然后把 `resume.md` 和 `config.json` 改成自己的内容。这两个文件不会提交到 GitHub。
+
+## 搜索和评分
+
+- 命令行 `--job` 是本次平台搜索词。
+- 未传 `--job` 时，默认使用 `config.json` 里 `target_roles` 的第一个岗位。
+- 本次搜索词会临时加入评分用 `target_roles`，避免搜索岗位和岗位加分标准不一致。
+- 关键词匹配会容忍常见空格差异，例如 `Java开发实习生` 可以命中 `Java 开发实习生`。
 
 ## 检查
 

@@ -8,6 +8,7 @@ import logging
 import os
 import random
 import re
+import socket
 import time
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -629,6 +630,29 @@ def normalize_text(text: str) -> str:
     return text.strip()
 
 
+def compact_match_text(text: str) -> str:
+    """Return a matching form that tolerates common spacing differences."""
+
+    normalized = normalize_text(text).lower()
+    return re.sub(r"[\s\u3000_\-/·・]+", "", normalized)
+
+
+def keyword_in_text(keyword: str, text: str) -> bool:
+    keyword = normalize_text(str(keyword))
+    if not keyword:
+        return False
+
+    normalized_text = normalize_text(text).lower()
+    normalized_keyword = keyword.lower()
+    if normalized_keyword in normalized_text:
+        return True
+
+    compact_keyword = compact_match_text(keyword)
+    if len(compact_keyword) < 2:
+        return False
+    return compact_keyword in compact_match_text(text)
+
+
 def sanitize_jd_text(text: str, chinese_only: bool = False) -> str:
     cleaned = normalize_text(text)
     if not chinese_only:
@@ -1088,10 +1112,10 @@ def score_jd(
     cfg = merge_config(config)
     title_clean = normalize_text(title)
     jd_clean = sanitize_jd_text(jd_text)
-    combined = f"{title_clean}\n{jd_clean}".lower()
+    combined = f"{title_clean}\n{jd_clean}"
 
     for keyword in cfg.get("exclude_keywords", []):
-        if keyword and keyword.lower() in combined:
+        if keyword_in_text(keyword, combined):
             return ScoreResult(
                 title=title_clean,
                 total_score=0,
@@ -1106,7 +1130,7 @@ def score_jd(
     rule_score = 0
     role_hit: str | None = None
     for role in cfg.get("target_roles", []):
-        if role and role.lower() in title_clean.lower():
+        if keyword_in_text(role, title_clean):
             role_hit = role
             rule_score += 30
             break
@@ -1114,7 +1138,7 @@ def score_jd(
     skill_hits = [
         skill
         for skill in cfg.get("skills", [])
-        if skill and skill.lower() in combined
+        if keyword_in_text(skill, combined)
     ]
     skill_hits = dedupe_keep_order(skill_hits)
     rule_score += min(len(skill_hits) * 5, 30)
@@ -1158,6 +1182,23 @@ def score_jd(
     )
 
 
+def is_cdp_port_ready(debug_port: int = 9222, *, host: str = "127.0.0.1", timeout: float = 0.8) -> bool:
+    try:
+        with socket.create_connection((host, int(debug_port)), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def assert_cdp_port_ready(debug_port: int = 9222) -> None:
+    if is_cdp_port_ready(debug_port):
+        return
+    raise RuntimeError(
+        f"未检测到已打开的浏览器调试端口 {debug_port}。"
+        "请先按提示手动启动浏览器并登录；skill 不会自动新开浏览器。"
+    )
+
+
 def connect_browser(debug_port: int = 9222):
     """使用 DrissionPage 的 CDP 端口接管模式接入已打开的浏览器。"""
 
@@ -1167,6 +1208,8 @@ def connect_browser(debug_port: int = 9222):
         raise RuntimeError(
             "未安装 DrissionPage，请先执行 `pip install DrissionPage`。"
         ) from exc
+
+    assert_cdp_port_ready(debug_port)
 
     options = ChromiumOptions()
     options.set_local_port(debug_port)

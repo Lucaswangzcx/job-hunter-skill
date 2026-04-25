@@ -7,6 +7,7 @@ from pathlib import Path
 from job_hunter_skill.shared import (
     JobTask,
     append_log,
+    keyword_in_text,
     load_log,
     log_bucket_items,
     normalize_platforms,
@@ -14,6 +15,7 @@ from job_hunter_skill.shared import (
     platform_user_data_dir,
     resolve_skill_dir,
     save_log,
+    score_jd,
     split_keywords,
     start_log_run,
     finish_log_run,
@@ -30,6 +32,10 @@ class SharedTests(unittest.TestCase):
             split_keywords("Java开发实习生, AI产品实习生，Java开发实习生"),
             ["Java开发实习生", "AI产品实习生"],
         )
+
+    def test_keyword_match_tolerates_spacing(self) -> None:
+        self.assertTrue(keyword_in_text("Java开发实习生", "Java 开发实习生"))
+        self.assertTrue(keyword_in_text("Spring Boot", "SpringBoot 项目经验"))
 
     def test_normalize_platforms(self) -> None:
         self.assertEqual(normalize_platforms("Boss, 实习僧"), ["boss", "sxs"])
@@ -94,6 +100,21 @@ class SharedTests(unittest.TestCase):
             self.assertEqual(len(reloaded["runs"]), 1)
             self.assertEqual(len(log_bucket_items(reloaded, "skipped")), 1)
             self.assertEqual(reloaded["analytics"]["counts"]["skipped"], 1)
+
+    def test_score_jd_matches_target_role_with_spacing_difference(self) -> None:
+        result = score_jd(
+            "Java 开发实习生",
+            "岗位要求：熟悉 Java、MySQL、SQL。",
+            {
+                "target_roles": ["Java开发实习生"],
+                "skills": ["Java", "MySQL", "SQL"],
+                "min_score": 80,
+            },
+            resume_text="",
+        )
+
+        self.assertEqual(result.role_hit, "Java开发实习生")
+        self.assertEqual(result.rule_score, 45)
 
 
 if __name__ == "__main__":
