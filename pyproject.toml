@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "job-hunter-skill"
 version = "0.1.0"
-description = "AI-assisted job application automation for Boss Zhipin and Shixiseng with DrissionPage CDP takeover."
+description = "基于 DrissionPage 和 CDP 接管的求职自动化工具，支持 Boss直聘 和 实习僧。"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
@@ -48,4 +48,3 @@ job-hunter-doctor = "doctor:main"
 
 [tool.setuptools]
 py-modules = ["skill_entry", "shared", "boss_apply", "sxs_apply", "doctor"]
-

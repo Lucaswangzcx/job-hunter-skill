@@ -1,35 +1,40 @@
-# Security Policy
+# 安全策略
 
-## Supported versions
+## 支持版本
 
-Only the latest release branch is considered supported for security fixes.
+我们只对最新的发布分支提供安全修复支持。
 
-## Reporting a vulnerability
+## 如何报告漏洞
 
-Please do not open public issues for security-sensitive problems.
+请不要直接用公开 Issue 报告安全敏感问题。
 
-Report privately to the maintainers with:
+请私下联系维护者，并尽量说明：
 
-- affected version
-- reproduction steps
-- impact summary
-- any suggested mitigation
+- 受影响版本
+- 复现步骤
+- 风险影响
+- 你认为可以怎么缓解
 
-If the issue involves:
+如果问题涉及以下内容，请在标题里写清楚：
 
-- credential leakage
-- unintended browser takeover
-- unsafe local file writes
-- LLM key exposure
+- 凭据泄露
+- 非预期的浏览器接管
+- 不安全的本地文件写入
+- LLM 密钥暴露
 
-please say so clearly in the report title.
+## 范围说明
 
-## Scope notes
+这个项目会接触：
 
-This project interacts with live websites and locally logged-in browsers. Please avoid sharing:
+- 真实网站
+- 本地已登录的浏览器
+- 个人简历
+- 本地日志
 
-- personal resumes
-- local browser profiles
-- API keys
-- private logs with identifiable job history
+请不要在公开讨论里贴出：
+
+- 简历全文
+- 浏览器 Profile
+- API Key
+- 可识别个人身份的日志
 

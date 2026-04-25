@@ -1,15 +1,15 @@
-# Contributing
+# 贡献指南
 
-Thanks for contributing to Job Hunter.
+感谢你愿意一起完善 `Job Hunter Skill`。
 
-## Before you open a PR
+## 提交 PR 之前
 
-1. Keep the browser automation stack on `DrissionPage`.
-2. Do not switch the runtime to Playwright or Selenium browser launch mode.
-3. Prefer adding new platforms as independent adapters instead of coupling logic into `skill_entry.py`.
-4. Keep default behavior safe: `rehearsal` should remain the recommended default.
+1. 请保持浏览器自动化栈为 `DrissionPage`。
+2. 不要把运行方式改成 Playwright 或 Selenium 主动拉起浏览器。
+3. 新平台尽量做成独立适配器，不要把平台逻辑继续堆进入口脚本。
+4. 默认行为请尽量保持安全，`rehearsal` 仍然建议作为默认模式。
 
-## Local setup
+## 本地准备
 
 ```bash
 python -m pip install -e .
@@ -17,23 +17,23 @@ python doctor.py --json
 python -m unittest tests.test_core
 ```
 
-## Adapter guidelines
+## 适配器规范
 
-- Implement new platforms in a dedicated `<platform>_apply.py`.
-- Expose `apply_jobs(task, config, browser, skill_dir)`.
-- Reuse `shared.py` for config, browser takeover, logging, and scoring.
-- Avoid hard-coding machine-specific absolute paths.
-- Do not auto-fill platform forms unless the behavior is explicit and documented.
+- 新平台请新建 `<platform>_apply.py`
+- 统一暴露 `apply_jobs(task, config, browser, skill_dir)`
+- 配置、浏览器接管、日志、评分逻辑尽量复用 `shared.py`
+- 不要硬编码某一台电脑上的绝对路径
+- 不要默认自动填写平台表单，除非这个行为已经明确说明
 
-## Selector changes
+## 选择器修改
 
-- Prefer resilient selectors based on text and stable class fragments.
-- Keep fallbacks when the site has multiple layout variants.
-- If a selector fix is derived from a live page, document the scenario in the PR.
+- 尽量使用稳定 class 片段和文本关键字
+- 网站有多个布局时保留 fallback
+- 如果 selector 是从真实页面上调出来的，建议在 PR 里说明场景
 
-## Tests
+## 测试
 
-- Add or update unit tests for any non-trivial shared logic change.
-- Keep tests deterministic and independent from live websites.
-- Do not require a logged-in browser session in CI.
+- 共享逻辑有变化时，请补充或更新单元测试
+- 测试要尽量独立、可重复，不依赖真实登录状态
+- CI 里不要依赖登录后的浏览器会话
 

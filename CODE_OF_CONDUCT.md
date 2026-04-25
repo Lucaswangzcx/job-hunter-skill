@@ -1,36 +1,36 @@
-# Code of Conduct
+# 行为准则
 
-## Our pledge
+## 我们的承诺
 
-We want Job Hunter to be a respectful and constructive project for users and contributors at every experience level.
+我们希望 `Job Hunter Skill` 成为一个对用户和贡献者都友好的项目。无论你是刚入门还是经验丰富，我们都希望你能在这里感到被尊重、被认真对待。
 
-## Our standards
+## 我们期待的行为
 
-Examples of behavior that helps build a positive environment:
+下面这些行为有助于营造积极的协作氛围：
 
-- being respectful and patient
-- giving practical, actionable feedback
-- assuming good intent while staying honest about problems
-- protecting other people's privacy and security
+- 尊重他人，表达清楚
+- 提供具体、可执行的建议
+- 假设对方是善意的，但也要诚实指出问题
+- 尊重隐私与安全
 
-Examples of unacceptable behavior:
+下面这些行为是不被接受的：
 
-- harassment or personal attacks
-- publishing private resumes, credentials, or browser data
-- hostile gatekeeping or repeated bad-faith arguments
-- sharing exploit details irresponsibly
+- 人身攻击、骚扰、歧视
+- 公开别人的简历、账号、密钥、浏览器数据
+- 恶意带节奏或反复争吵
+- 不负责任地传播漏洞或绕过方式
 
-## Enforcement
+## 执行
 
-Project maintainers may remove comments, issues, PRs, or contributors that violate this code of conduct.
+维护者可以根据情况移除评论、Issue、PR 或贡献权限。
 
-## Scope
+## 适用范围
 
-This policy applies in:
+本准则适用于：
 
-- issues
-- pull requests
-- discussions
-- release notes
-- other project communication channels
+- Issue
+- PR
+- Discussions
+- Release Notes
+- 其他项目沟通渠道
 

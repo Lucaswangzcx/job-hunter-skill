@@ -1,41 +1,32 @@
 # Job Hunter Skill
 
-一个基于 `DrissionPage + CDP 端口接管` 的自动化求职投递工具，当前聚焦 `Boss直聘` 与 `实习僧`。
-
-An AI-assisted job application automation tool built on `DrissionPage + CDP takeover`, currently focused on `Boss直聘` and `Shixiseng`.
-
-AI-assisted job application automation for `Boss直聘` and `实习僧`, built on `DrissionPage + CDP takeover`.
-
-This repository is currently an `alpha` release. The core flow has been run against live sites, but selectors and page behavior can still change over time.
-
-## Highlights
-
-- `DrissionPage only`: no Playwright or Selenium browser launch flow
-- `Single-platform execution`: run `Boss` or `SXS` independently
-- `Safe by default`: explicit `rehearsal` and `apply` modes
-- `Extensible adapter design`: easy to add new job platforms later
-- `Analysis-friendly logs`: structured `runs`, `records`, and `analytics`
-
-## Why this project
-
-- Uses `DrissionPage` only, with local browser takeover via CDP.
-- Keeps platform adapters decoupled from the entry script.
-- Supports explicit `rehearsal` and `apply` modes.
-- Scores JDs with rule-based logic plus an OpenAI-compatible LLM hook.
-- Writes structured JSON logs for later analysis.
-
-## Supported platforms
+一个面向真实求职场景的自动化投递工具，基于 `DrissionPage + CDP 端口接管` 实现，当前支持：
 
 - `Boss直聘`
 - `实习僧`
 
-## What this repo does not do
+这个仓库目前是 `alpha` 版本，目标不是“功能做满”，而是先把真实能跑通、能演练、能扩展、能开源协作的基础打稳。
 
-- It does not launch Playwright or Selenium browsers.
-- It does not support `51job` in the current release.
-- It does not guarantee long-term selector stability for live websites.
+## 这个项目做什么
 
-## Project layout
+- 只使用 `DrissionPage`，不使用 Playwright 或 Selenium 主动启动浏览器
+- 让用户先手动登录，再由脚本接管本地浏览器会话
+- 按简历和 JD 做匹配评分
+- 支持 `安全演练` 和 `正式投递` 两种模式
+- 记录结构化日志，方便后续分析和复盘
+
+## 当前支持的平台
+
+- `Boss直聘`
+- `实习僧`
+
+## 当前不做什么
+
+- 不支持 `51job`
+- 不主动启动 Playwright / Selenium 浏览器
+- 不承诺所有站点 selector 永久稳定
+
+## 项目结构
 
 ```text
 job-hunter-skill/
@@ -45,100 +36,87 @@ job-hunter-skill/
 ├── sxs_apply.py
 ├── doctor.py
 ├── config.example.json
+├── resume.example.md
 ├── README.md
 ├── CONTRIBUTING.md
-├── CHANGELOG.md
+├── SECURITY.md
+├── CODE_OF_CONDUCT.md
 └── tests/
 ```
 
-## Quickstart
+## 快速开始
 
-### 1. Clone and install
+### 1. 安装
 
 ```bash
-git clone <your-repo-url>
+git clone <你的仓库地址>
 cd job-hunter-skill
 python -m pip install -e .
 ```
 
-If you prefer plain requirements:
+如果你更想用 requirements：
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-### 2. Prepare your local runtime directory
+### 2. 准备运行目录
 
-By default, the project uses your current working directory as the runtime directory. That means these files will live in the folder where you run the command:
+默认情况下，项目会把配置、简历和日志写到你运行命令时所在的目录。通常会包含这些文件：
 
 - `config.json`
 - `resume.md`
 - `job-hunter.log`
-- `boss-<city>-log.json`
-- `sxs-<city>-log.json`
+- `boss-<城市>-log.json`
+- `sxs-<城市>-log.json`
 - `.job_hunter/browser/...`
 
-Copy the example config:
-
-```bash
-cp config.example.json config.json
-```
-
-On PowerShell:
+先复制示例配置：
 
 ```powershell
 Copy-Item config.example.json config.json
-```
-
-Put your resume in:
-
-```text
-./resume.md
-```
-
-You can start from the provided template:
-
-```powershell
 Copy-Item resume.example.md resume.md
 ```
 
-You can also use another runtime directory:
+把你的简历内容填进 `resume.md` 后再继续。
+
+如果你想指定别的运行目录：
 
 ```bash
 job-hunter --skill-dir /path/to/workspace
 ```
 
-Or set an environment variable:
+也可以通过环境变量指定：
 
 ```bash
 JOB_HUNTER_HOME=/path/to/workspace
 ```
 
-### 3. Run the environment doctor
+### 3. 运行自检
 
 ```bash
 job-hunter-doctor --json
 ```
 
-Or:
+或者：
 
 ```bash
 python doctor.py --json
 ```
 
-The doctor checks:
+自检会检查：
 
-- Python version
-- presence of core code files
+- Python 版本
+- 核心代码文件是否存在
 - `config.json`
 - `resume_path`
 - `DrissionPage`
-- LLM settings
-- whether platform browser debug ports are listening
+- LLM 配置
+- 平台浏览器端口是否已监听
 
-## Browser launch model
+## 浏览器启动方式
 
-This project relies on `manual browser login + CDP port takeover`.
+这个项目依赖“手动登录 + CDP 接管”。
 
 ### Boss直聘
 
@@ -152,77 +130,77 @@ This project relies on `manual browser login + CDP port takeover`.
 & "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --remote-debugging-port=9223 --user-data-dir=".job_hunter/browser/sxs"
 ```
 
-Log in manually, keep the browser open, then run the skill.
+登录完成后保持浏览器窗口打开，再运行脚本。
 
-## Usage
+## 使用方式
 
-### Interactive entry
+### 交互式入口
 
 ```bash
 python skill_entry.py
 ```
 
-### Installed CLI
+### 安装后的 CLI
 
 ```bash
 job-hunter --platform boss --mode rehearsal --job "Java开发实习生" --city 北京 --count 1
 ```
 
-### Boss rehearsal
+### Boss 安全演练
 
 ```bash
 job-hunter --platform boss --mode rehearsal --job "Java开发实习生" --city 北京 --count 1
 ```
 
-### Boss real apply
+### Boss 正式投递
 
 ```bash
 job-hunter --platform boss --mode apply --job "Java开发实习生" --city 北京 --count 1 --min-score 80
 ```
 
-### Shixiseng rehearsal
+### 实习僧 安全演练
 
 ```bash
 job-hunter --platform sxs --mode rehearsal --job "Java开发实习生" --city 北京 --count 1
 ```
 
-### Shixiseng real apply
+### 实习僧 正式投递
 
 ```bash
 job-hunter --platform sxs --mode apply --job "Java开发实习生" --city 北京 --count 1 --min-score 80
 ```
 
-If you already finished browser login, add:
+如果你已经登录完成，可以加：
 
 ```bash
 --yes
 ```
 
-### Platform-only scripts
+### 平台脚本直跑
 
 ```bash
 job-hunter-boss --job "Java开发实习生" --city 北京 --count 1 --mode rehearsal
 job-hunter-sxs --job "Java开发实习生" --city 北京 --count 1 --mode rehearsal
 ```
 
-## Config
+## 配置说明
 
-Use `config.example.json` as the starting point.
+把 [config.example.json](./config.example.json) 复制成 `config.json` 后，再按自己的情况修改。
 
-Important fields:
+核心字段：
 
-- `resume_path`: local resume path
-- `greeting`: Boss greeting text
-- `skills`: extracted or manually maintained skill keywords
-- `target_roles`: role keywords that receive role bonus
-- `exclude_keywords`: hard stop keywords
-- `min_score`: threshold for real apply
-- `default_mode`: recommended default is `rehearsal`
-- `platform_ports`: CDP ports per platform
-- `user_data_dirs`: browser user-data-dir per platform
-- `llm`: OpenAI-compatible endpoint settings
+- `resume_path`：本地简历路径
+- `greeting`：Boss 打招呼话术
+- `skills`：技能关键词
+- `target_roles`：期望岗位关键词
+- `exclude_keywords`：排除关键词
+- `min_score`：正式投递阈值
+- `default_mode`：默认模式，建议 `rehearsal`
+- `platform_ports`：平台对应的 CDP 端口
+- `user_data_dirs`：平台对应的浏览器用户目录
+- `llm`：OpenAI 兼容接口配置
 
-For LLM settings, you can use either `config.json` or environment variables:
+LLM 配置也可以通过环境变量设置：
 
 - `JOB_HUNTER_LLM_BASE_URL`
 - `JOB_HUNTER_LLM_API_KEY`
@@ -230,29 +208,29 @@ For LLM settings, you can use either `config.json` or environment variables:
 - `JOB_HUNTER_LLM_TIMEOUT`
 - `JOB_HUNTER_LLM_TEMPERATURE`
 
-## Run modes
+## 运行模式
 
 ### `rehearsal`
 
-- No real application click is executed.
-- Useful for selector checks, JD extraction, scoring, and login validation.
-- Recommended default for first-time setup.
+- 不执行真实投递
+- 适合验证搜索、详情读取、评分和按钮定位
+- 建议第一次使用时先跑这个模式
 
 ### `apply`
 
-- Real apply actions are executed after the score reaches the threshold.
-- Use only after you verify the platform flow in rehearsal mode.
+- 达到阈值后执行真实投递
+- 只建议在你确认流程稳定后使用
 
-## Logging
+## 日志
 
-Each platform writes an analysis-friendly JSON log.
+每个平台都会写分析友好的 JSON 日志。
 
-Examples:
+示例：
 
 - `boss-北京-log.json`
 - `sxs-北京-log.json`
 
-Schema summary:
+日志结构简述：
 
 ```json
 {
@@ -268,30 +246,30 @@ Schema summary:
 }
 ```
 
-Highlights:
+重点字段：
 
-- `runs`: batch-level execution history with `run_id`
-- `records`: job-level details for applied, skipped, and failed items
-- `analytics`: counts, score summary, top-scoring jobs, and company totals
+- `runs`：批次级运行记录，带 `run_id`
+- `records`：岗位级明细，适合筛选和导出分析
+- `analytics`：总量、分数统计、高分岗位、公司统计
 
-## Architecture
+## 架构
 
-- `skill_entry.py`: single-platform dispatcher
-- `shared.py`: config, LLM, logging, scoring, browser takeover helpers
-- `boss_apply.py`: Boss adapter
-- `sxs_apply.py`: Shixiseng adapter
-- `doctor.py`: environment self-check
+- `skill_entry.py`：单平台入口调度
+- `shared.py`：配置、LLM、日志、评分、浏览器接管工具
+- `boss_apply.py`：Boss 适配器
+- `sxs_apply.py`：实习僧适配器
+- `doctor.py`：环境自检
 
-To add another platform:
+如果要新增平台：
 
-1. Create `<platform>_apply.py`
-2. Implement `apply_jobs(task, config, browser, skill_dir)`
-3. Register it in `SCRIPT_REGISTRY` in `skill_entry.py`
-4. Add label, alias, default port, and browser dir mapping in `shared.py`
+1. 新建 `<platform>_apply.py`
+2. 实现 `apply_jobs(task, config, browser, skill_dir)`
+3. 在 `skill_entry.py` 的 `SCRIPT_REGISTRY` 里注册
+4. 在 `shared.py` 里补平台名称、别名、默认端口和浏览器目录
 
-## Development
+## 开发
 
-Run local checks:
+本地检查命令：
 
 ```bash
 python doctor.py --json
@@ -299,20 +277,19 @@ python -m unittest tests.test_core
 python -m py_compile skill_entry.py shared.py boss_apply.py sxs_apply.py doctor.py tests/test_core.py
 ```
 
-CI is configured in `.github/workflows/ci.yml`.
+CI 配置在 [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)。
 
-## Safety and responsibility
+## 风险说明
 
-Use this project at your own risk.
+请自行确认你对目标平台的使用方式是否符合对应服务条款。
 
-- You are responsible for complying with the terms of the target platforms.
-- Manual login is intentionally required.
-- Always validate flows in `rehearsal` mode before using `apply`.
-- Do not commit your `config.json`, `resume.md`, browser profiles, or local logs.
+- 必须手动登录
+- 建议先用 `rehearsal`
+- 不要提交 `config.json`、`resume.md`、本地浏览器目录和日志
 
-## Roadmap
+## 后续可以做什么
 
-- More resilient selector fallbacks
-- Optional structured export for analytics
-- Additional platform adapters
-- Better test coverage around shared scoring and runtime behavior
+- 提升 selector 稳定性
+- 增加更多平台适配器
+- 增加更完整的日志分析能力
+- 提升共享逻辑的测试覆盖率
